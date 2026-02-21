@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <title>ProspectAI</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --bg:#0c0c0f; --surface:#16161c; --surface2:#1e1e28;
+      --border:#2a2a38; --accent:#7c6aff; --accent2:#ff6a9b;
+      --text:#e8e8f0; --muted:#6b6b80;
+    }
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{width:100%;min-height:100vh;background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;font-size:13px}
+    .screen{display:none}.screen.active{display:block}
+
+    .ob-header{padding:22px 22px 14px;background:linear-gradient(160deg,#12121a,#1a1428);border-bottom:1px solid var(--border);text-align:center}
+    .ob-logo{font-family:'Syne',sans-serif;font-weight:800;font-size:20px;background:linear-gradient(90deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:4px}
+    .ob-subtitle{color:var(--muted);font-size:12px;line-height:1.6}
+    .step-indicator{display:flex;align-items:center;justify-content:center;gap:6px;padding:12px 22px 0}
+    .step-dot{width:6px;height:6px;border-radius:50%;background:var(--border);transition:all .3s}
+    .step-dot.active{background:var(--accent);width:20px;border-radius:3px}
+    .step-dot.done{background:#4ade80}
+    .step-content{padding:18px 20px;min-height:260px;display:flex;flex-direction:column}
+    .step{display:none;flex-direction:column;flex:1}.step.active{display:flex}
+    .step-eyebrow{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;color:var(--accent);margin-bottom:4px}
+    .step-title{font-family:'Syne',sans-serif;font-weight:700;font-size:15px;margin-bottom:3px;line-height:1.3}
+    .step-desc{color:var(--muted);font-size:12px;line-height:1.6;margin-bottom:12px}
+    .step-desc em{color:var(--text);font-style:normal}
+    .field-label{font-size:11px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:5px;margin-top:10px}
+    .field-label:first-of-type{margin-top:0}
+    .field-opt{font-weight:400;text-transform:none;letter-spacing:0}
+    .ob-input{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:9px 11px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:13px;outline:none;transition:border-color .2s}
+    .ob-input:focus{border-color:var(--accent)}
+    .ob-input::placeholder{color:var(--muted)}
+    textarea.ob-input{resize:none;line-height:1.6}
+    .step-nav{display:flex;gap:10px;margin-top:auto;padding-top:16px}
+    .btn-back{flex:0 0 auto;padding:10px 14px;background:none;border:1px solid var(--border);border-radius:9px;color:var(--muted);font-size:13px;cursor:pointer;transition:all .2s}
+    .btn-back:hover{color:var(--text);border-color:var(--text)}
+    .btn-next{flex:1;padding:10px;background:linear-gradient(135deg,var(--accent),#9b6aff);border:none;border-radius:9px;color:#fff;font-family:'Syne',sans-serif;font-weight:700;font-size:13px;cursor:pointer;transition:all .2s}
+    .btn-next:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(124,106,255,.3)}
+    .ob-validation{font-size:11px;color:#ff6b6b;margin-top:6px;display:none}
+    .ob-validation.visible{display:block}
+    .api-hint{margin-top:8px;padding:9px 11px;background:rgba(124,106,255,.08);border:1px solid rgba(124,106,255,.2);border-radius:8px;color:var(--muted);font-size:11.5px;line-height:1.6}
+    .api-hint a{color:var(--accent);text-decoration:none}
+
+    .app-header{padding:11px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:linear-gradient(135deg,#12121a,#18182a);position:sticky;top:0;z-index:10}
+    .app-logo{font-family:'Syne',sans-serif;font-weight:800;font-size:16px;background:linear-gradient(90deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+    .app-header-right{display:flex;align-items:center;gap:6px}
+    .user-pill{font-size:11px;color:var(--muted);padding:3px 9px;border:1px solid var(--border);border-radius:20px;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .hdr-btn{background:none;border:1px solid var(--border);border-radius:7px;padding:3px 9px;color:var(--muted);font-size:11px;cursor:pointer;transition:all .2s;font-family:'DM Sans',sans-serif}
+    .hdr-btn:hover{border-color:var(--accent);color:var(--accent)}
+    .close-btn{background:none;border:1px solid var(--border);border-radius:7px;padding:3px 8px;color:var(--muted);font-size:13px;cursor:pointer;transition:all .2s;line-height:1}
+    .close-btn:hover{border-color:#ff6b6b;color:#ff6b6b}
+
+    .profile-card{margin:12px 16px 0;background:var(--surface);border:1px solid var(--border);border-radius:11px;padding:11px 13px;display:none}
+    .profile-card.visible{display:block}
+    .profile-card-top{display:flex;align-items:flex-start;justify-content:space-between}
+    .profile-name{font-family:'Syne',sans-serif;font-weight:700;font-size:14px;margin-bottom:5px}
+    .profile-meta{color:var(--muted);font-size:11.5px;line-height:1.8}
+    .edit-prospect-btn{flex-shrink:0;margin-left:8px;background:none;border:1px solid var(--border);border-radius:6px;padding:3px 8px;color:var(--muted);font-size:10px;cursor:pointer;transition:all .2s;white-space:nowrap;font-family:'DM Sans',sans-serif}
+    .edit-prospect-btn:hover{border-color:var(--accent);color:var(--accent)}
+
+    .research-badge{display:none;margin:8px 16px 0;padding:8px 12px;background:rgba(251,191,36,.07);border:1px solid rgba(251,191,36,.22);border-radius:8px;color:#fbbf24;font-size:11.5px;line-height:1.5}
+
+    .override-panel{display:none;margin:8px 16px 0;background:var(--surface);border:1px solid var(--accent);border-radius:11px;padding:11px 13px}
+    .override-panel.visible{display:block}
+    .override-label{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:1.3px;color:var(--accent);margin-bottom:9px;display:flex;align-items:center;justify-content:space-between}
+    .override-close{background:none;border:none;color:var(--muted);font-size:13px;cursor:pointer;padding:0}
+    .override-close:hover{color:var(--text)}
+    .override-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+    .override-input{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:7px;padding:8px 10px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:12px;outline:none;transition:border-color .2s}
+    .override-input:focus{border-color:var(--accent)}
+    .override-input::placeholder{color:var(--muted)}
+    .override-hint{margin-top:7px;font-size:11px;color:var(--muted)}
+
+    .scrape-warn{display:none;margin:8px 16px 0;padding:8px 12px;background:rgba(255,107,107,.07);border:1px solid rgba(255,107,107,.22);border-radius:8px;font-size:11.5px;color:#ff6b6b}
+    .scrape-warn.visible{display:flex;align-items:center;justify-content:space-between;gap:10px}
+    .scrape-warn-fix{flex-shrink:0;background:none;border:1px solid #ff6b6b;border-radius:6px;padding:3px 9px;color:#ff6b6b;font-size:11px;cursor:pointer;font-family:'DM Sans',sans-serif}
+
+    .state-idle{padding:20px 16px;text-align:center;color:var(--muted);font-size:12px;line-height:1.7}
+    .state-idle .emoji{font-size:24px;display:block;margin-bottom:8px}
+    .manual-entry-btn{margin-top:10px;padding:7px 14px;background:none;border:1px solid var(--border);border-radius:8px;color:var(--muted);font-size:12px;cursor:pointer;transition:all .2s;font-family:'DM Sans',sans-serif}
+    .manual-entry-btn:hover{border-color:var(--accent);color:var(--accent)}
+
+    .generate-controls{margin:10px 16px 0;background:var(--surface);border:1px solid var(--border);border-radius:11px;padding:12px 13px}
+    .ctrl-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+    .ctrl-row:last-child{margin-bottom:0}
+    .ctrl-label{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:1.2px;color:var(--muted);flex-shrink:0;margin-right:10px}
+    .ctrl-chips{display:flex;gap:5px;flex-wrap:wrap}
+    .ctrl-chip{padding:5px 10px;border-radius:6px;font-size:11px;font-weight:500;border:1px solid var(--border);background:var(--bg);color:var(--muted);cursor:pointer;transition:all .2s;user-select:none;white-space:nowrap}
+    .ctrl-chip:hover{border-color:var(--accent);color:var(--text)}
+    .ctrl-chip.selected{border-color:var(--accent);background:rgba(124,106,255,.15);color:var(--accent)}
+    [data-group="theme"] .ctrl-chip[data-val="sharp"].selected{border-color:#ff6b6b;background:rgba(255,107,107,.12);color:#ff6b6b}
+    [data-group="theme"] .ctrl-chip[data-val="warm"].selected{border-color:#fbbf24;background:rgba(251,191,36,.12);color:#fbbf24}
+    [data-group="theme"] .ctrl-chip[data-val="curious"].selected{border-color:#4ade80;background:rgba(74,222,128,.12);color:#4ade80}
+
+    .generate-btn{margin:10px 16px 0;width:calc(100% - 32px);padding:11px;background:linear-gradient(135deg,var(--accent),#9b6aff);border:none;border-radius:10px;color:#fff;font-family:'Syne',sans-serif;font-weight:700;font-size:13px;cursor:pointer;transition:all .25s}
+    .generate-btn:hover{transform:translateY(-1px);box-shadow:0 8px 22px rgba(124,106,255,.32)}
+    .generate-btn:active{transform:translateY(0)}
+    .generate-btn:disabled{opacity:.45;cursor:not-allowed;transform:none;box-shadow:none}
+    .error-msg{display:none;margin:8px 16px 0;padding:9px 12px;background:rgba(255,80,80,.08);border:1px solid rgba(255,80,80,.22);border-radius:8px;color:#ff6b6b;font-size:12px}
+    .error-msg.visible{display:block}
+    .loading-bar{display:none;height:2px;background:var(--border);margin:8px 16px 0;border-radius:2px;overflow:hidden}
+    .loading-bar.visible{display:block}
+    .loading-bar::after{content:'';display:block;height:100%;width:40%;background:linear-gradient(90deg,var(--accent),var(--accent2));animation:slide 1.2s ease-in-out infinite}
+    @keyframes slide{0%{transform:translateX(-100%)}100%{transform:translateX(350%)}}
+
+    .output-area{margin:10px 16px 0;display:none}
+    .output-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+    .out-tabs{display:flex;gap:4px}
+    .tab-btn{padding:6px 11px;background:var(--surface);border:1px solid var(--border);border-radius:7px;color:var(--muted);font-family:'DM Sans',sans-serif;font-size:12px;font-weight:500;cursor:pointer;transition:all .2s}
+    .tab-btn.active{border-color:var(--accent);color:var(--accent);background:rgba(124,106,255,.1)}
+    .tab-btn:hover:not(.active){color:var(--text)}
+    .regen-btn{padding:6px 11px;background:none;border:1px solid var(--border);border-radius:7px;color:var(--muted);font-size:11px;cursor:pointer;transition:all .2s;font-family:'DM Sans',sans-serif}
+    .regen-btn:hover{border-color:var(--accent);color:var(--accent)}
+    .output-section{display:none}.output-section.visible{display:block}
+    .msg-meta{font-size:10px;color:var(--muted);margin-bottom:5px}
+    .message-box{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:13px;line-height:1.8;font-size:12.5px;color:var(--text);white-space:pre-wrap;max-height:280px;overflow-y:auto;margin-bottom:8px}
+    .message-box::-webkit-scrollbar{width:4px}
+    .message-box::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
+    .copy-btn{width:100%;padding:8px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:12px;font-weight:500;cursor:pointer;transition:all .2s;font-family:'DM Sans',sans-serif;margin-bottom:12px}
+    .copy-btn:hover,.copy-btn.copied{border-color:#4ade80;color:#4ade80}
+    .spacer{height:20px}
+  </style>
+</head>
+<body>
+
+<!-- ONBOARDING -->
+<div class="screen active" id="screen-onboarding">
+  <div class="ob-header">
+    <div class="ob-logo">ProspectAI</div>
+    <div class="ob-subtitle">Quick setup — takes 2 minutes.</div>
+  </div>
+  <div class="step-indicator">
+    <div class="step-dot active" id="dot-0"></div>
+    <div class="step-dot" id="dot-1"></div>
+    <div class="step-dot" id="dot-2"></div>
+  </div>
+  <div class="step-content">
+
+    <div class="step active" id="step-0">
+      <div class="step-eyebrow">Step 1 of 3 — About You</div>
+      <div class="step-title">Who's sending these messages?</div>
+      <div class="step-desc">Used in sign-offs and to set voice context for the AI.</div>
+      <div class="field-label">Your Name</div>
+      <input type="text" class="ob-input" id="ob-name" placeholder="e.g. Sarah Lim"/>
+      <div class="field-label">Your Job Title</div>
+      <input type="text" class="ob-input" id="ob-title" placeholder="e.g. Business Development Representative"/>
+      <div class="field-label">Your Company</div>
+      <input type="text" class="ob-input" id="ob-company" placeholder="e.g. Syncflow"/>
+      <div class="ob-validation" id="val-0">Please fill in all three fields.</div>
+      <div class="step-nav"><button class="btn-next" id="next-0">Continue →</button></div>
+    </div>
+
+    <div class="step" id="step-1">
+      <div class="step-eyebrow">Step 2 of 3 — Your Product</div>
+      <div class="step-title">What problem do you solve?</div>
+      <div class="step-desc">Plain English. <em>What pain do you fix and how?</em></div>
+      <div class="field-label">What you sell</div>
+      <textarea class="ob-input" id="ob-product" rows="3" placeholder="e.g. We help ops teams stop doing manual data reconciliation. Our tool cuts that work from 3 hours to 15 minutes a day."></textarea>
+      <div class="field-label">Best result delivered</div>
+      <input type="text" class="ob-input" id="ob-outcome" placeholder="e.g. Cut admin time 60%, saved $200k annually"/>
+      <div class="ob-validation" id="val-1">Please describe what you sell.</div>
+      <div class="step-nav">
+        <button class="btn-back" id="back-1">←</button>
+        <button class="btn-next" id="next-1">Continue →</button>
+      </div>
+    </div>
+
+    <div class="step" id="step-2">
+      <div class="step-eyebrow">Step 3 of 3 — Credibility & API</div>
+      <div class="step-title">Almost ready.</div>
+      <div class="step-desc">Credibility signals are used <em>only when the culture calls for it</em>.</div>
+      <div class="field-label">Notable customers <span class="field-opt">(optional)</span></div>
+      <input type="text" class="ob-input" id="ob-logos" placeholder="e.g. Grab, Lazada, Series B fintechs"/>
+      <div class="field-label">Funding / awards <span class="field-opt">(optional)</span></div>
+      <input type="text" class="ob-input" id="ob-creds" placeholder="e.g. YC W23, $5M seed, 200+ customers"/>
+      <div class="field-label">Your background <span class="field-opt">(optional)</span></div>
+      <input type="text" class="ob-input" id="ob-background" placeholder="e.g. Ex-Gojek, 8 years in SEA fintech"/>
+      <div class="field-label" style="margin-top:14px">OpenAI API Key</div>
+      <input type="password" class="ob-input" id="ob-apikey" placeholder="sk-..."/>
+      <div class="api-hint">Get it at <a href="https://platform.openai.com" target="_blank">platform.openai.com</a> → API Keys. ~$1–2/month.</div>
+      <div class="ob-validation" id="val-2">Please enter your API key.</div>
+      <div class="step-nav">
+        <button class="btn-back" id="back-2">←</button>
+        <button class="btn-next" id="next-2">Start Prospecting ✦</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div class="screen" id="screen-app">
+
+  <div class="app-header">
+    <div class="app-logo">ProspectAI</div>
+    <div class="app-header-right">
+      <div class="user-pill" id="userPill"></div>
+      <button class="hdr-btn" id="editBtn">Edit Profile</button>
+      <button class="close-btn" id="closeBtn" title="Close panel">✕</button>
+    </div>
+  </div>
+
+  <div class="profile-card" id="profileCard">
+    <div class="profile-card-top">
+      <div style="flex:1;min-width:0">
+        <div class="profile-name" id="profileName"></div>
+        <div class="profile-meta" id="profileMeta"></div>
+      </div>
+      <button class="edit-prospect-btn" id="overrideToggleBtn">✏ Edit</button>
+    </div>
+  </div>
+
+  <div class="scrape-warn" id="scrapeWarn">
+    <span>Couldn't read this page.</span>
+    <button class="scrape-warn-fix" id="scrapeWarnFix">Enter manually</button>
+  </div>
+
+  <div class="override-panel" id="overridePanel">
+    <div class="override-label">
+      <span>✏ Prospect Details</span>
+      <button class="override-close" id="overrideClose">✕</button>
+    </div>
+    <div class="override-grid">
+      <input type="text" class="override-input" id="ov-name" placeholder="Prospect name"/>
+      <input type="text" class="override-input" id="ov-title" placeholder="Job title"/>
+      <input type="text" class="override-input" id="ov-company" placeholder="Company"/>
+      <input type="text" class="override-input" id="ov-country" placeholder="Country / city"/>
+    </div>
+    <div class="override-hint">Edits here override what was scraped. Apply on next Generate.</div>
+  </div>
+
+  <div class="research-badge" id="researchBadge"></div>
+
+  <div class="state-idle" id="stateIdle" style="display:none">
+    <span class="emoji">🔍</span>
+    Navigate to a LinkedIn profile,<br/>then click Generate.
+    <div><button class="manual-entry-btn" id="manualEntryBtn">✏ Or enter manually</button></div>
+  </div>
+
+  <!-- Controls: tone + language only -->
+  <div class="generate-controls">
+    <div class="ctrl-row">
+      <span class="ctrl-label">Tone</span>
+      <div class="ctrl-chips" data-group="theme">
+        <div class="ctrl-chip selected" data-val="sharp">⚡ Sharp</div>
+        <div class="ctrl-chip" data-val="warm">🤝 Warm</div>
+        <div class="ctrl-chip" data-val="curious">🔍 Curious</div>
+      </div>
+    </div>
+    <div class="ctrl-row">
+      <span class="ctrl-label">Language</span>
+      <div class="ctrl-chips" data-group="lang">
+        <div class="ctrl-chip selected" data-val="mixed">Mixed</div>
+        <div class="ctrl-chip" data-val="english">English</div>
+        <div class="ctrl-chip" data-val="local">Full local</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="error-msg" id="errorMsg"></div>
+  <div class="loading-bar" id="loadingBar"></div>
+  <button class="generate-btn" id="generateBtn">✦ Generate Messages</button>
+
+  <div class="output-area" id="outputArea">
+    <div class="output-header">
+      <div class="out-tabs">
+        <button class="tab-btn active" data-tab="email">📧 Email</button>
+        <button class="tab-btn" data-tab="linkedin">💼 LinkedIn</button>
+        <button class="tab-btn" data-tab="whatsapp">💬 WhatsApp</button>
+      </div>
+      <button class="regen-btn" id="regenBtn">↺ Regenerate</button>
+    </div>
+    <div class="output-section visible" id="out-email">
+      <div class="msg-meta" id="meta-email"></div>
+      <div class="message-box" id="msg-email"></div>
+      <button class="copy-btn" data-target="msg-email">Copy Email</button>
+    </div>
+    <div class="output-section" id="out-linkedin">
+      <div class="message-box" id="msg-linkedin"></div>
+      <button class="copy-btn" data-target="msg-linkedin">Copy Message</button>
+    </div>
+    <div class="output-section" id="out-whatsapp">
+      <div class="message-box" id="msg-whatsapp"></div>
+      <button class="copy-btn" data-target="msg-whatsapp">Copy Message</button>
+    </div>
+  </div>
+
+  <div class="spacer"></div>
+</div>
+
+<script src="sidepanel.js"></script>
+</body>
+</html>
