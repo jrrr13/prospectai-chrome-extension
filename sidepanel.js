@@ -17,14 +17,13 @@ const SEA_COUNTRIES = {
   cambodia:    ["cambodia","phnom penh"],
   laos:        ["laos","vientiane"],
   brunei:      ["brunei"],
-  timorleste:  ["timor-leste","timor leste","dili","east timor"],
 };
 function detectCountry(loc) {
   const s = (loc||"").toLowerCase();
   for (const [c,kws] of Object.entries(SEA_COUNTRIES)) if (kws.some(k=>s.includes(k))) return c;
   return "general";
 }
-const FLAGS = { indonesia:"🇮🇩",singapore:"🇸🇬",malaysia:"🇲🇾",philippines:"🇵🇭",vietnam:"🇻🇳",thailand:"🇹🇭",myanmar:"🇲🇲",cambodia:"🇰🇭",laos:"🇱🇦",brunei:"🇧🇳",timorleste:"🇹🇱",general:"🌏" };
+const FLAGS = { indonesia:"🇮🇩",singapore:"🇸🇬",malaysia:"🇲🇾",philippines:"🇵🇭",vietnam:"🇻🇳",thailand:"🇹🇭",myanmar:"🇲🇲",cambodia:"🇰🇭",laos:"🇱🇦",brunei:"🇧🇳",general:"🌏" };
 
 function getThemeModifier(theme) {
   return {
@@ -53,19 +52,42 @@ Every word in all three messages must be English. No exceptions.
 Do not use any of these or anything like them: Pak, Ibu, Halo, Kính gửi, Anh, Chị, Sawasdee, Khun, Krub, Kha, Salamat, Po, Pasensya, Trân trọng, Salam hangat.
 Email: open directly with the pain hook. No foreign greeting.
 WhatsApp and LinkedIn: open with "Hi [FirstName],"
-Sign off with "Best," or "Thanks,"`;
+Sign off with "Best," or "Thanks,"
+CTA closing question must be one of these five only (pick one, vary each generate):
+"Keen on learning more?" / "Keen on taking a look?" / "Makes sense for a peek?" / "Open to learning more?" / "Open for a quick look?"`;
   }
   if (lang === "local") {
-    return `LANGUAGE: FULL LOCAL
+    const localCTA = {
+      indonesia:   { setup: "Kalau relevan, dengan senang hati saya bisa ceritakan lebih lanjut.", question: "Ada waktu untuk ngobrol sebentar?" },
+      malaysia:    { setup: "Kalau ada kaitan, boleh saya kongsi lebih lanjut.", question: "Nak tahu lebih lanjut tak?" },
+      vietnam:     { setup: "Nếu phù hợp, tôi rất vui được chia sẻ thêm.", question: "Anh/Chị có muốn tìm hiểu thêm không?" },
+      thailand:    { setup: "ถ้าสนใจ ยินดีแชร์ข้อมูลเพิ่มเติมครับ/ค่ะ", question: "สะดวกคุยเพิ่มเติมไหมครับ/ค่ะ?" },
+      philippines: { setup: "Kung may kaugnayan ito, masaya akong magbahagi ng higit pa.", question: "Gusto mo bang malaman ang higit pa?" },
+      myanmar:     { setup: "သင့်အတွက် အသုံးဝင်ပါက ပိုမိုရှင်းပြပေးဝမ်းမြောက်ပါသည်။", question: "ဆက်ပြောဆိုနိုင်မလား?" },
+      cambodia:    { setup: "បើទាក់ទងនឹងការងាររបស់អ្នក ខ្ញុំរីករាយចែករំលែកបន្ថែម។", question: "តើអ្នកចង់ដឹងបន្ថែមទេ?" },
+      laos:        { setup: "ຖ້າມັນກ່ຽວຂ້ອງ, ຂ້ອຍຍິນດີທີ່ຈະແບ່ງປັນເພີ່ມເຕີມ.", question: "ສົນໃຈຮຽນຮູ້ເພີ່ມເຕີມບໍ?" },
+      brunei:      { setup: "Jika ada kaitannya, saya dengan senang hati boleh berkongsi lebih.", question: "Ingin mengetahui lebih lanjut?" },
+      singapore:   { setup: "Happy to share more if it's useful lah.", question: "Want to take a look?" },
+      general:     { setup: "Happy to share more if useful.", question: "Keen on learning more?" },
+    }[country] || { setup: "Happy to share more if useful.", question: "Keen on learning more?" };
+
+    return `LANGUAGE: FULL LOCAL — THIS OVERRIDES ALL OTHER LANGUAGE RULES INCLUDING THE CTA RULES BELOW
 Write every part of every message in the local language of ${country.toUpperCase()}.
-Indonesia: full Bahasa Indonesia. English only for brand or product names with no local form.
+Indonesia: full Bahasa Indonesia. English only for unavoidable brand or product names.
 Vietnam: full Vietnamese.
-Thailand: full Thai.
+Thailand: full Thai script throughout.
 Philippines: full Tagalog or natural Taglish throughout.
-Malaysia: Malay or Manglish with lah, kan, ah throughout.
+Malaysia: full Malay or Manglish with lah, kan, ah throughout.
 Singapore: Singlish with lah, lor, meh, sia throughout.
-General: warm plain English.
-Every line — opener, body, CTA, sign-off — must be in the local language.`;
+Myanmar: full Burmese script.
+Cambodia: full Khmer script.
+Laos: full Lao script.
+Brunei: full Malay.
+Every line — opener, body, CTA, sign-off — must be in the local language. No English words except unavoidable brand names.
+
+LOCAL CTA FOR ${country.toUpperCase()} (use these exact phrases, do not substitute English):
+Setup sentence: "${localCTA.setup}"
+Closing question: "${localCTA.question}"`;
   }
   const g = {
     indonesia:   { email: `"Pak [FirstName]," or "Ibu [FirstName],"`, social: `"Halo Pak [FirstName]," or "Halo Ibu [FirstName],"` },
@@ -220,11 +242,14 @@ NON-NEGOTIABLES
 
 ---
 CTA RULES
+If LANGUAGE is FULL LOCAL: use the LOCAL CTA phrases specified in the LANGUAGE section above exactly as written. Do not use any English CTA phrases.
+
+If LANGUAGE is ENGLISH ONLY or MIXED:
 The CTA is two parts:
 Part 1 — setup sentence (one plain sentence that earns the ask naturally):
 Options: "Happy to share more if useful." / "Can send over more context if it fits." / "Easy to show how it works for ${prospect.company || "your team"}." / "Worth exploring if it applies to what you are working on."
-Part 2 — closing question on its own line (under 5 words, vary each generate, never repeat the same one twice):
-"Keen on a look?" / "Worth a look?" / "Open to a peek?" / "Keen to see more?" / "Worth finding out?" / "Up for a look?" / "Want to see it?" / "Worth a quick look?" / "Open to hearing more?" / "Good time to look?" / "Keen on more?" / "Makes sense to look?"
+Part 2 — closing question on its own line. Use ONLY these five options, pick a different one each generate:
+"Keen on learning more?" / "Keen on taking a look?" / "Makes sense for a peek?" / "Open to learning more?" / "Open for a quick look?"
 
 ---
 EMAIL FORMAT — follow this structure exactly
